@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { HydratedDocument } from 'mongoose';
 import User from '../models/User';
 import { AuthRequest } from '../types/auth';
 import { IUser, SafeUser } from '../types/user';
 
-const createSafeUser = (user: IUser): SafeUser => ({
-  id: user._id,
+const createSafeUser = (user: HydratedDocument<IUser> | IUser): SafeUser => ({
+  id: user._id.toString(),
   name: user.name,
   email: user.email,
   role: user.role,

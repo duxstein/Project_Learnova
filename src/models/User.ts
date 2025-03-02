@@ -1,8 +1,12 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IUser } from '../types/user';
 
-const userSchema = new mongoose.Schema<IUser>(
+interface UserModel extends Model<IUser> {
+  findByEmail(email: string): Promise<IUser | null>;
+}
+
+const userSchema = new mongoose.Schema<IUser, UserModel>(
   {
     name: {
       type: String,
@@ -26,6 +30,26 @@ const userSchema = new mongoose.Schema<IUser>(
     avatar: {
       type: String,
     },
+    // Gamification fields
+    points: {
+      type: Number,
+      default: 0,
+    },
+    level: {
+      type: Number,
+      default: 1,
+    },
+    lastLoginAt: {
+      type: Date,
+    },
+    currentStreak: {
+      type: Number,
+      default: 0,
+    },
+    badges: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Badge',
+    }],
   },
   {
     timestamps: true,
@@ -33,13 +57,12 @@ const userSchema = new mongoose.Schema<IUser>(
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  const user = this;
-  if (!user.isModified('password')) return next();
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
     next(error as Error);
@@ -47,7 +70,7 @@ userSchema.pre('save', async function (next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function (
+userSchema.methods.comparePassword = async function(
   candidatePassword: string
 ): Promise<boolean> {
   try {
@@ -57,6 +80,6 @@ userSchema.methods.comparePassword = async function (
   }
 };
 
-const User = mongoose.model<IUser>('User', userSchema);
+const User = mongoose.model<IUser, UserModel>('User', userSchema);
 
 export default User; 

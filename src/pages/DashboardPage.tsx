@@ -19,6 +19,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useGamification } from '../contexts/GamificationContext';
 
 interface DashboardPageProps {
   children: ReactNode;
@@ -70,6 +71,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { userName, points, level, progress, badges, leaderboard } = useGamification();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -216,7 +218,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, Alex!</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back, {userName}!</h1>
               <p className="text-gray-600">Continue your learning journey where you left off.</p>
             </div>
             <div className="mt-4 md:mt-0 flex items-center space-x-3">

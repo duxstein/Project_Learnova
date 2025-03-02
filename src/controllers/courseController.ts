@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import { RequestHandler } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import Course from '../models/Course';
 import { AuthRequest } from '../types/auth';
 
@@ -35,11 +34,12 @@ export const courseController = {
   }) as RequestHandler,
 
   // Create new course
-  createCourse: (async (req: AuthRequest, res: Response) => {
+  createCourse: (async (req: Request, res: Response) => {
     try {
       const { title, description, thumbnail, duration, level } = req.body;
+      const authReq = req as AuthRequest;
 
-      if (!req.user) {
+      if (!authReq.user) {
         return res.status(401).json({ success: false, message: 'Unauthorized' });
       }
 
@@ -50,9 +50,9 @@ export const courseController = {
         duration,
         level,
         instructor: {
-          id: req.user.id,
-          name: req.user.name,
-          avatar: req.user.avatar,
+          id: authReq.user.id,
+          name: authReq.user.name,
+          avatar: authReq.user.avatar,
         },
       });
 
@@ -65,16 +65,17 @@ export const courseController = {
   }) as RequestHandler,
 
   // Update course
-  updateCourse: (async (req: AuthRequest, res: Response) => {
+  updateCourse: (async (req: Request, res: Response) => {
     try {
       const { title, description, thumbnail, duration, level } = req.body;
+      const authReq = req as AuthRequest;
       const course = await Course.findById(req.params.id);
 
       if (!course) {
         return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
-      if (!req.user || course.instructor.id.toString() !== req.user.id) {
+      if (!authReq.user || course.instructor.id.toString() !== authReq.user.id) {
         return res.status(403).json({ success: false, message: 'Not authorized to update this course' });
       }
 
@@ -93,15 +94,16 @@ export const courseController = {
   }) as RequestHandler,
 
   // Delete course
-  deleteCourse: (async (req: AuthRequest, res: Response) => {
+  deleteCourse: (async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthRequest;
       const course = await Course.findById(req.params.id);
 
       if (!course) {
         return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
-      if (!req.user || course.instructor.id.toString() !== req.user.id) {
+      if (!authReq.user || course.instructor.id.toString() !== authReq.user.id) {
         return res.status(403).json({ success: false, message: 'Not authorized to delete this course' });
       }
 

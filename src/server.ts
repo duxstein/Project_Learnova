@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database';
 import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
+import gamificationRoutes from './routes/gamificationRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(express.json());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

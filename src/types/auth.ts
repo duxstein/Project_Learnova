@@ -1,12 +1,6 @@
 import { Request } from 'express';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+import { SafeUser } from './user';
 
 export interface AuthRequest extends Request {
-  user?: User;
+  user?: SafeUser;
 } 

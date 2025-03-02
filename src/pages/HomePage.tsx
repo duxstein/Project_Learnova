@@ -69,7 +69,7 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="pt-16">
+    <div> {/* Removed className="pt-16" */}
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary-600 to-secondary-700 text-white">
         <div className="absolute inset-0 opacity-20">
@@ -90,10 +90,10 @@ const HomePage: React.FC = () => {
                 Personalized learning experiences that adapt to your unique needs, goals, and learning style.
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link to="/dashboard" className="btn bg-white text-primary-700 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-all">
+                <Link to="/login" className="btn bg-white text-primary-700 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-all">
                   Get Started
                 </Link>
-                <Link to="/course/all" className="btn bg-transparent border-2 border-white text-white hover:bg-white/10 px-6 py-3 rounded-lg font-semibold transition-all">
+                <Link to="/login" className="btn bg-transparent border-2 border-white text-white hover:bg-white/10 px-6 py-3 rounded-lg font-semibold transition-all">
                   Explore Courses
                 </Link>
               </div>

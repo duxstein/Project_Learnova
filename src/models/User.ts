@@ -50,6 +50,22 @@ const userSchema = new mongoose.Schema<IUser, UserModel>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Badge',
     }],
+    hasCompletedOnboarding: {
+      type: Boolean,
+      default: false,
+    },
+    preferences: {
+      type: {
+        learningStyle: String,
+        learningPace: String,
+        learningApproach: String,
+        preferredTime: String,
+        sessionDuration: String,
+        learningEnvironment: String,
+        learningStrength: String,
+      },
+      default: null,
+    },
   },
   {
     timestamps: true,

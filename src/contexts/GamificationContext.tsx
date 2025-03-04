@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from './AuthContext';
+import gamificationApi from '../api/gamificationApi';
 import { IBadge } from '../models/Badge';
 import { Types } from 'mongoose';
 
@@ -84,14 +84,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userName, setUserName] = useState('');
-
-  // Set up axios interceptor for authentication
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-  }, []);
+  const [progress, setProgress] = useState({ current: 0, nextLevel: 1000, percentage: 0 });
 
   // Initial data fetch
   useEffect(() => {
@@ -125,11 +118,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/gamification/user-data', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = response.data;
+      const data = await gamificationApi.getUserData();
       
       console.log('User data refresh:', {
         oldPoints: points,
@@ -147,8 +136,8 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         current: data.currentStreak,
         lastLogin: data.lastLoginAt || new Date().toISOString()
       });
+      setProgress(data.levelProgress);
 
-      // Return the data for Promise.all
       return data;
     } catch (error) {
       console.error('Error fetching user gamification data:', error);
@@ -158,13 +147,9 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const fetchLeaderboard = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/gamification/leaderboard', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log('Leaderboard response:', response.data);
-      if (response.data.success && Array.isArray(response.data.data)) {
-        const formattedLeaderboard = response.data.data.map((entry: any) => ({
+      const response = await gamificationApi.getLeaderboard();
+      if (response.success && Array.isArray(response.data)) {
+        const formattedLeaderboard = response.data.map((entry: any) => ({
           id: entry._id || String(entry.rank),
           name: entry.name,
           points: entry.points,
@@ -174,7 +159,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         }));
         setLeaderboard(formattedLeaderboard);
       } else {
-        console.error('Invalid leaderboard data structure:', response.data);
+        console.error('Invalid leaderboard data structure:', response);
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -246,34 +231,23 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      const response = await axios.post('/api/gamification/update-streak');
-      const { points: newPoints, streak: newStreak, level: newLevel, levelProgress } = response.data;
-      
-      console.log('Streak update response:', {
-        newPoints,
-        newStreak,
-        newLevel,
-        levelProgress
-      });
+      const data = await gamificationApi.updateStreak();
+      const { points: newPoints, streak: newStreak, level: newLevel, levelProgress } = data;
 
       setPoints(newPoints);
       setLevel(newLevel);
-      setStreak({
-        current: newStreak.current,
-        lastLogin: newStreak.lastLogin
-      });
+      setStreak(newStreak);
+      setProgress(levelProgress);
 
-      // Add 5 points for daily login
-      if (newStreak.current > streak.current) {
+      if (newLevel > level) {
         setLastReward({
-          type: 'points',
-          message: '+5 points: Daily Login Bonus!',
+          type: 'level',
+          message: `Congratulations! You've reached level ${newLevel}!`,
           timestamp: Date.now()
         });
       }
 
-      // Refresh leaderboard immediately after updating points
-      await fetchLeaderboard();
+      return data;
     } catch (error) {
       console.error('Error updating streak:', error);
     }
@@ -283,34 +257,20 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      const response = await axios.post('/api/gamification/add-points', { amount, reason });
-      const { points: newPoints, level: newLevel, levelProgress } = response.data;
-      
-      console.log('Points update response:', {
-        oldPoints: points,
-        newPoints,
-        oldLevel: level,
-        newLevel,
-        levelProgress
-      });
+      const data = await gamificationApi.addPoints(amount);
+      const { points: newPoints, level: newLevel, levelProgress } = data;
 
       setPoints(newPoints);
-      
-      if (newLevel > level) {
-        console.log(`Level up detected: ${level} -> ${newLevel}`);
-        setLevel(newLevel);
-        setLastReward({
-          type: 'level',
-          message: `Level Up! You're now level ${newLevel}`,
-          timestamp: Date.now()
-        });
-      } else if (reason) {
-        setLastReward({
-          type: 'points',
-          message: `+${amount} points: ${reason}`,
-          timestamp: Date.now()
-        });
-      }
+      setLevel(newLevel);
+      setProgress(levelProgress);
+
+      setLastReward({
+        type: 'points',
+        message: `${reason || 'You earned'} ${amount} points!`,
+        timestamp: Date.now()
+      });
+
+      return data;
     } catch (error) {
       console.error('Error adding points:', error);
     }
@@ -320,15 +280,9 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      const response = await axios.post('/api/gamification/unlock-badge', { badgeId });
-      const { badges: newBadges } = response.data;
-      
-      setBadges(newBadges);
-      setLastReward({
-        type: 'badge',
-        message: `New Badge: ${newBadges.find(b => b._id === badgeId)?.name}`,
-        timestamp: Date.now()
-      });
+      const data = await gamificationApi.unlockBadge(badgeId);
+      await fetchUserData(); // Refresh user data to get updated badges
+      return data;
     } catch (error) {
       console.error('Error unlocking badge:', error);
     }
@@ -338,8 +292,8 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      const response = await axios.post('/api/gamification/unlock-achievement', { achievementId });
-      const { achievements: newAchievements, points: newPoints } = response.data;
+      const response = await gamificationApi.unlockAchievement(achievementId);
+      const { achievements: newAchievements, points: newPoints } = response;
       
       setAchievements(newAchievements);
       setPoints(newPoints);
@@ -362,7 +316,7 @@ export const GamificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     addPoints,
     unlockBadge,
     unlockAchievement,
-    progress: calculateProgress(points),
+    progress,
     lastReward,
     streak,
     updateStreak,

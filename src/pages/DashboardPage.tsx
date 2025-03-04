@@ -1,7 +1,6 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { 
   BookOpen, 
   Clock, 
@@ -20,54 +19,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
+import courseApi from '../api/courseApi';
+import { CourseDetail } from '../types/course';
 
 interface DashboardPageProps {
   children: ReactNode;
 }
 
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  instructor: {
-    id: string;
-    name: string;
-    avatar: string;
-  };
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  rating: number;
-  enrolledCount: number;
-  modules: Array<{
-    title: string;
-    duration: string;
-    order: number;
-    lessons: Array<{
-      title: string;
-      duration: string;
-      videoUrl?: string;
-      order: number;
-      resources: Array<{
-        title: string;
-        type: 'PDF' | 'VIDEO' | 'LINK' | 'CODE';
-        url: string;
-      }>;
-    }>;
-  }>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  courses: Course[];
-  message?: string;
-}
-
 const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -76,12 +37,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get<ApiResponse>('/api/courses');
-        if (response.data.success) {
-          setCourses(response.data.courses);
-        } else {
-          setError(response.data.message || 'Failed to fetch courses');
-        }
+        const response = await courseApi.getCourses();
+        setCourses(response.courses);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch courses');
         console.error('Error fetching courses:', err);
@@ -292,7 +249,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">Continue Learning</h2>
-                <Link to="/course/all" className="text-primary-600 text-sm font-medium hover:text-primary-700 transition-colors">
+                <Link to="/courses" className="text-primary-600 text-sm font-medium hover:text-primary-700 transition-colors">
                   View All Courses
                 </Link>
               </div>
@@ -327,7 +284,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ children }) => {
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center text-sm text-gray-600 mb-3 md:mb-0">
                             <BookOpen className="h-4 w-4 mr-1" />
-                            <span>Next: {course.modules[0].lessons[0].title}</span>
+                            <span>Next: {course.modules?.[0]?.lessons?.[0]?.title || 'No lessons available'}</span>
                             <span className="mx-2">•</span>
                             <Clock className="h-4 w-4 mr-1" />
                             <span>{course.duration}</span>

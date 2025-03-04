@@ -5,6 +5,7 @@ import connectDB from './config/database';
 import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
+import userPreferencesRoutes from './routes/userPreferencesRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -15,19 +16,27 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173', // Frontend URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/user-preferences', userPreferencesRoutes);
 
 // Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  res.status(500).json({ message: 'Something broke!' });
 });
 
 // Start server

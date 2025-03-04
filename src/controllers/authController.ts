@@ -11,6 +11,8 @@ const createSafeUser = (user: HydratedDocument<IUser> | IUser): SafeUser => ({
   email: user.email,
   role: user.role,
   avatar: user.avatar,
+  hasCompletedOnboarding: user.hasCompletedOnboarding,
+  preferences: user.preferences,
 });
 
 export const authController = {

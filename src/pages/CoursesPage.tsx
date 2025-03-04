@@ -1,158 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CourseCard from '../components/Course/CourseCard';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { BookOpen, Clock, Users, Star } from 'lucide-react';
 import courseApi from '../api/courseApi';
-import { Course } from '../types/course';
-
-const categories = ['All', 'Web Development', 'Frontend', 'Backend', 'Mobile', 'DevOps'];
-const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+import { CourseDetail } from '../types/course';
 
 const CoursesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedLevel, setSelectedLevel] = useState('All');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await courseApi.getCourses();
+        setCourses(response.courses);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to fetch courses');
+        console.error('Error fetching courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchCourses();
-  }, [searchQuery, selectedCategory, selectedLevel, page]);
+  }, []);
 
-  const fetchCourses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = {
-        search: searchQuery || undefined,
-        category: selectedCategory !== 'All' ? selectedCategory.toUpperCase().replace(' ', '_') : undefined,
-        level: selectedLevel !== 'All' ? selectedLevel.toUpperCase() : undefined,
-        page,
-        limit: 9,
-      };
-
-      const response = await courseApi.getCourses(params);
-      setCourses(response.courses);
-      setTotalPages(response.pagination.pages);
-    } catch (err) {
-      setError('Failed to load courses. Please try again later.');
-      console.error('Error fetching courses:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setPage(1); // Reset to first page when search changes
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCategory(e.target.value);
-    setPage(1);
-  };
-
-  const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedLevel(e.target.value);
-    setPage(1);
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Explore Courses</h1>
-        <div className="flex flex-col md:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Search courses..."
-            className="flex-grow p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-          <select
-            value={selectedCategory}
-            onChange={handleCategoryChange}
-            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          <select
-            value={selectedLevel}
-            onChange={handleLevelChange}
-            className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {levels.map(level => (
-              <option key={level} value={level}>{level}</option>
-            ))}
-          </select>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {error && (
-        <div className="text-center py-4 text-red-600">
-          {error}
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex justify-center items-center py-12"
-          >
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-          </motion.div>
-        ) : (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl font-bold mb-4">Oops! Something went wrong</h1>
+            <p className="text-gray-600 mb-8">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-primary py-2 px-6"
             >
-              {courses.map(course => (
-                <CourseCard key={course.id} {...course} />
-              ))}
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pt-20 pb-12">
+      <div className="container mx-auto px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">All Courses</h1>
+          <p className="text-gray-600">Explore our wide range of courses and start learning today.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <motion.div
+              key={course._id}
+              className="bg-white rounded-xl shadow-md overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="h-48 overflow-hidden">
+                <img
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {course.level}
+                  </span>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                    <span className="text-sm text-gray-600">{course.rating.toFixed(1)}</span>
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>{course.duration}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Users className="h-4 w-4 mr-1" />
+                    <span>{course.enrolledCount} students</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <img
+                      src={course.instructor.avatar}
+                      alt={course.instructor.name}
+                      className="w-8 h-8 rounded-full mr-2"
+                    />
+                    <span className="text-sm text-gray-600">{course.instructor.name}</span>
+                  </div>
+                  <Link
+                    to={`/course/${course._id}`}
+                    className="btn btn-primary py-1.5 px-4"
+                  >
+                    View Course
+                  </Link>
+                </div>
+              </div>
             </motion.div>
-
-            {courses.length === 0 && (
-              <div className="text-center py-12">
-                <h3 className="text-xl text-gray-600">No courses found matching your criteria</h3>
-                <p className="text-gray-500 mt-2">Try adjusting your filters or search query</p>
-              </div>
-            )}
-
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8 gap-2">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-4 py-2">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </AnimatePresence>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

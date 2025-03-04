@@ -1,4 +1,5 @@
 import { Document, Types } from 'mongoose';
+import { UserPreferences } from './userPreferences';
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
@@ -12,6 +13,8 @@ export interface IUser extends Document {
   lastLoginAt?: Date;
   currentStreak: number;
   badges: Types.ObjectId[];
+  hasCompletedOnboarding: boolean;
+  preferences: UserPreferences | null;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -23,4 +26,6 @@ export type SafeUser = {
   email: string;
   role: string;
   avatar?: string;
+  hasCompletedOnboarding: boolean;
+  preferences?: UserPreferences | null;
 }; 

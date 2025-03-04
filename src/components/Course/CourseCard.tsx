@@ -1,94 +1,79 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { useGamification } from '../../contexts/GamificationContext';
+import { motion } from 'framer-motion';
+import { Star, Users, Clock, BookOpen } from 'lucide-react';
+import { Course } from '../../types/course';
 
-interface CourseCardProps {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  progress: number;
-  thumbnail: string;
-  instructor: {
-    name: string;
-    avatar: string;
-  };
-}
+interface CourseCardProps extends Course {}
 
-const CourseCard: React.FC<CourseCardProps> = ({
-  id,
-  title,
-  description,
-  duration,
-  level,
-  progress,
-  thumbnail,
-  instructor,
-}) => {
-  const { addPoints } = useGamification();
+const CourseCard: React.FC<CourseCardProps> = (course) => {
+  // Extract first instructor name
+  const primaryInstructor = course.Instructors.split(',')[0].trim();
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Beginner':
-        return 'bg-green-100 text-green-800';
-      case 'Intermediate':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Advanced':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Get first three skills
+  const topSkills = course.Skills.split(',')
+    .map(skill => skill.trim())
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      whileTap={{ scale: 0.98 }}
       className="bg-white rounded-xl shadow-md overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
     >
-      <Link to={`/course/${id}`} className="block">
-        <div className="relative">
-          <img
-            src={thumbnail}
-            alt={title}
-            className="w-full h-48 object-cover"
-          />
-          <div className="absolute top-2 right-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLevelColor(level)}`}>
-              {level}
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {course["Course Type"]}
+          </span>
+          <div className="flex items-center">
+            <Star className="h-4 w-4 text-yellow-400 mr-1" />
+            <span className="text-sm text-gray-600">{course.Rating.replace('stars', '')}</span>
+          </div>
+        </div>
+        <h3 className="text-xl font-semibold mb-2">{course.Title}</h3>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course["Short Intro"]}</p>
+        
+        {/* Skills */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {topSkills.map((skill) => (
+            <span
+              key={skill}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+            >
+              {skill}
             </span>
-          </div>
+          ))}
         </div>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
-          
-          <div className="flex items-center mb-4">
-            <img
-              src={instructor.avatar}
-              alt={instructor.name}
-              className="w-8 h-8 rounded-full mr-2"
-            />
-            <span className="text-sm text-gray-700">{instructor.name}</span>
-          </div>
 
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>{duration}</span>
-            <div className="flex items-center">
-              <span className="mr-2">{progress}% complete</span>
-              <div className="w-20 h-2 bg-gray-200 rounded-full">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-primary-500 rounded-full"
-                />
-              </div>
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-sm text-gray-500">
+            <Clock className="h-4 w-4 mr-1" />
+            <span>{course.Duration}</span>
+          </div>
+          <div className="flex items-center text-sm text-gray-500">
+            <Users className="h-4 w-4 mr-1" />
+            <span>{course["Number of viewers"]} students</span>
           </div>
         </div>
-      </Link>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <BookOpen className="h-5 w-5 text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600">{primaryInstructor}</span>
+          </div>
+          <Link
+            to={course.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary py-1.5 px-4"
+          >
+            View Course
+          </Link>
+        </div>
+      </div>
     </motion.div>
   );
 };

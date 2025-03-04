@@ -9,6 +9,8 @@ import SignUpPage from './pages/SignUpPage';
 import DashboardPage from './pages/DashboardPage';
 import CoursePage from './pages/CoursePage';
 import ProfilePage from './pages/ProfilePage';
+import CoursesPage from './pages/CoursesPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -21,9 +23,10 @@ import { GamificationProvider } from './contexts/GamificationContext';
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// Protected Route Component
+// Protected Route Component with Onboarding Check
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <div>Loading...</div>;
@@ -31,6 +34,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
+  }
+
+  // Redirect to onboarding if user hasn't completed it
+  // Skip onboarding page itself to avoid infinite loop
+  if (!user.hasCompletedOnboarding && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" />;
   }
 
   return <>{children}</>;
@@ -41,18 +50,26 @@ function App() {
   const location = useLocation();
 
   // Conditionally render the Navbar based on the current route
-  const hideNavbarPaths = ['/', '/login', '/signup']; // Paths where Navbar should be hidden
+  const hideNavbarPaths = ['/', '/login', '/signup', '/onboarding']; // Added onboarding to hidden navbar paths
   const showNavbar = !hideNavbarPaths.includes(location.pathname);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {showNavbar && <Navbar />} {/* Conditionally render Navbar */}
+      {showNavbar && <Navbar />}
       <main className="flex-grow">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <OnboardingPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
@@ -63,6 +80,14 @@ function App() {
                     <Leaderboard />
                     <ProgressBar />
                   </DashboardPage>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses"
+              element={
+                <ProtectedRoute>
+                  <CoursesPage />
                 </ProtectedRoute>
               }
             />

@@ -1,139 +1,80 @@
-import mongoose, { Document, Schema } from 'mongoose';
-
-export interface IResource extends Document {
-  title: string;
-  type: 'PDF' | 'VIDEO' | 'LINK' | 'CODE';
-  url: string;
-}
-
-export interface ILesson extends Document {
-  title: string;
-  duration: string;
-  content?: string;
-  videoUrl?: string;
-  order: number;
-  resources: IResource[];
-}
-
-export interface IModule extends Document {
-  title: string;
-  duration: string;
-  order: number;
-  lessons: ILesson[];
-}
+import mongoose, { Document } from 'mongoose';
 
 export interface ICourse extends Document {
-  title: string;
-  description: string;
-  thumbnail: string;
-  instructor: {
-    id: mongoose.Types.ObjectId;
-    name: string;
-    avatar?: string;
-  };
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  rating: number;
-  enrolledCount: number;
-  modules: IModule[];
-  createdAt: Date;
-  updatedAt: Date;
+  Title: string;
+  URL: string;
+  "Short Intro": string;
+  Category: string;
+  "Sub-Category": string;
+  "Course Type": string;
+  Language: string;
+  "Subtitle Languages": string;
+  Skills: string;
+  Instructors: string;
+  Rating: string;
+  "Number of viewers": string;
+  Duration: string;
+  Site: string;
 }
 
-const resourceSchema = new Schema<IResource>({
-  title: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ['PDF', 'VIDEO', 'LINK', 'CODE'],
-    required: true,
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-});
-
-const lessonSchema = new Schema<ILesson>({
-  title: {
-    type: String,
-    required: true,
-  },
-  duration: {
-    type: String,
-    required: true,
-  },
-  content: String,
-  videoUrl: String,
-  order: {
-    type: Number,
-    required: true,
-  },
-  resources: [resourceSchema],
-});
-
-const moduleSchema = new Schema<IModule>({
-  title: {
-    type: String,
-    required: true,
-  },
-  duration: {
-    type: String,
-    required: true,
-  },
-  order: {
-    type: Number,
-    required: true,
-  },
-  lessons: [lessonSchema],
-});
-
-const courseSchema = new Schema<ICourse>(
+const courseSchema = new mongoose.Schema<ICourse>(
   {
-    title: {
+    Title: {
       type: String,
       required: true,
     },
-    description: {
+    URL: {
       type: String,
       required: true,
     },
-    thumbnail: {
+    "Short Intro": {
       type: String,
       required: true,
     },
-    instructor: {
-      id: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-      },
-      name: {
-        type: String,
-        required: true,
-      },
-      avatar: String,
-    },
-    duration: {
+    Category: {
       type: String,
       required: true,
     },
-    level: {
+    "Sub-Category": {
       type: String,
-      enum: ['Beginner', 'Intermediate', 'Advanced'],
-      default: 'Beginner',
+      required: true,
     },
-    rating: {
-      type: Number,
-      default: 0,
+    "Course Type": {
+      type: String,
+      required: true,
     },
-    enrolledCount: {
-      type: Number,
-      default: 0,
+    Language: {
+      type: String,
+      required: true,
     },
-    modules: [moduleSchema],
+    "Subtitle Languages": {
+      type: String,
+      required: true,
+    },
+    Skills: {
+      type: String,
+      required: true,
+    },
+    Instructors: {
+      type: String,
+      required: true,
+    },
+    Rating: {
+      type: String,
+      required: true,
+    },
+    "Number of viewers": {
+      type: String,
+      required: true,
+    },
+    Duration: {
+      type: String,
+      required: true,
+    },
+    Site: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,

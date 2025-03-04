@@ -40,7 +40,7 @@ const Navbar: React.FC = () => {
     ...(isAuthenticated
       ? [
           { name: 'Dashboard', path: '/dashboard' },
-          { name: 'Courses', path: '/course/all' },
+          { name: 'Courses', path: '/courses' },
           { name: 'About', path: '/about' },
         ]
       : [{ name: 'About', path: '/about' }]),
@@ -52,7 +52,7 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <Brain className="h-8 w-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">LearnSmart AI</span>
+            <span className="text-xl font-bold text-gray-900">Learnova</span>
           </Link>
 
           {/* Desktop Navigation */}

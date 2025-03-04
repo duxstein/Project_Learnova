@@ -1,6 +1,7 @@
 import { Request, Response, RequestHandler } from 'express';
 import Course from '../models/Course';
 import { AuthRequest } from '../types/auth';
+import { Course as CourseType, transformCourseData } from '../types/course';
 
 export const courseController = {
   // Get all courses
@@ -10,7 +11,21 @@ export const courseController = {
         .sort({ createdAt: -1 })
         .limit(10);
 
-      res.json({ success: true, courses });
+      const transformedCourses = courses.map(course => {
+        const baseCourse = transformCourseData(course.toObject() as CourseType);
+        return {
+          ...baseCourse,
+          description: baseCourse["Short Intro"],
+          instructor: {
+            id: '1',
+            name: baseCourse.instructors[0] || 'Unknown Instructor',
+            avatar: `https://source.unsplash.com/random/100x100?person`
+          },
+          enrolledCount: baseCourse.viewersCount
+        };
+      });
+
+      res.json({ success: true, courses: transformedCourses });
     } catch (error) {
       console.error('Error getting courses:', error);
       res.status(500).json({ success: false, message: 'Error fetching courses' });
@@ -26,7 +41,8 @@ export const courseController = {
         return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
-      res.json({ success: true, course });
+      const transformedCourse = transformCourseData(course.toObject() as CourseType);
+      res.json({ success: true, course: transformedCourse });
     } catch (error) {
       console.error('Error getting course:', error);
       res.status(500).json({ success: false, message: 'Error fetching course' });
@@ -36,28 +52,31 @@ export const courseController = {
   // Create new course
   createCourse: (async (req: Request, res: Response) => {
     try {
-      const { title, description, thumbnail, duration, level } = req.body;
-      const authReq = req as AuthRequest;
-
-      if (!authReq.user) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-      }
+      const { Title, URL, "Short Intro": ShortIntro, Category, "Sub-Category": SubCategory,
+        "Course Type": CourseType, Language, "Subtitle Languages": SubtitleLanguages,
+        Skills, Instructors, Rating, "Number of viewers": NumberOfViewers,
+        Duration, Site } = req.body;
 
       const course = new Course({
-        title,
-        description,
-        thumbnail,
-        duration,
-        level,
-        instructor: {
-          id: authReq.user.id,
-          name: authReq.user.name,
-          avatar: authReq.user.avatar,
-        },
+        Title,
+        URL,
+        "Short Intro": ShortIntro,
+        Category,
+        "Sub-Category": SubCategory,
+        "Course Type": CourseType,
+        Language,
+        "Subtitle Languages": SubtitleLanguages,
+        Skills,
+        Instructors,
+        Rating,
+        "Number of viewers": NumberOfViewers,
+        Duration,
+        Site
       });
 
       await course.save();
-      res.status(201).json({ success: true, course });
+      const transformedCourse = transformCourseData(course.toObject() as CourseType);
+      res.status(201).json({ success: true, course: transformedCourse });
     } catch (error) {
       console.error('Error creating course:', error);
       res.status(500).json({ success: false, message: 'Error creating course' });
@@ -67,26 +86,36 @@ export const courseController = {
   // Update course
   updateCourse: (async (req: Request, res: Response) => {
     try {
-      const { title, description, thumbnail, duration, level } = req.body;
-      const authReq = req as AuthRequest;
+      const { Title, URL, "Short Intro": ShortIntro, Category, "Sub-Category": SubCategory,
+        "Course Type": CourseType, Language, "Subtitle Languages": SubtitleLanguages,
+        Skills, Instructors, Rating, "Number of viewers": NumberOfViewers,
+        Duration, Site } = req.body;
+
       const course = await Course.findById(req.params.id);
 
       if (!course) {
         return res.status(404).json({ success: false, message: 'Course not found' });
       }
 
-      if (!authReq.user || course.instructor.id.toString() !== authReq.user.id) {
-        return res.status(403).json({ success: false, message: 'Not authorized to update this course' });
-      }
-
-      course.title = title || course.title;
-      course.description = description || course.description;
-      course.thumbnail = thumbnail || course.thumbnail;
-      course.duration = duration || course.duration;
-      course.level = level || course.level;
+      // Update fields if provided
+      if (Title) course.Title = Title;
+      if (URL) course.URL = URL;
+      if (ShortIntro) course["Short Intro"] = ShortIntro;
+      if (Category) course.Category = Category;
+      if (SubCategory) course["Sub-Category"] = SubCategory;
+      if (CourseType) course["Course Type"] = CourseType;
+      if (Language) course.Language = Language;
+      if (SubtitleLanguages) course["Subtitle Languages"] = SubtitleLanguages;
+      if (Skills) course.Skills = Skills;
+      if (Instructors) course.Instructors = Instructors;
+      if (Rating) course.Rating = Rating;
+      if (NumberOfViewers) course["Number of viewers"] = NumberOfViewers;
+      if (Duration) course.Duration = Duration;
+      if (Site) course.Site = Site;
 
       await course.save();
-      res.json({ success: true, course });
+      const transformedCourse = transformCourseData(course.toObject() as CourseType);
+      res.json({ success: true, course: transformedCourse });
     } catch (error) {
       console.error('Error updating course:', error);
       res.status(500).json({ success: false, message: 'Error updating course' });
@@ -96,15 +125,10 @@ export const courseController = {
   // Delete course
   deleteCourse: (async (req: Request, res: Response) => {
     try {
-      const authReq = req as AuthRequest;
       const course = await Course.findById(req.params.id);
 
       if (!course) {
         return res.status(404).json({ success: false, message: 'Course not found' });
-      }
-
-      if (!authReq.user || course.instructor.id.toString() !== authReq.user.id) {
-        return res.status(403).json({ success: false, message: 'Not authorized to delete this course' });
       }
 
       await course.deleteOne();

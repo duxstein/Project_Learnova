@@ -2,7 +2,7 @@ import axios from 'axios';
 import OpenAI from 'openai';
 import { RoadmapTopic, UserLearningProfile, LearningRoadmap } from '../types/learning';
 import Course, { ICourse } from '../models/Course';
-import { LearningRoadmap } from '../types/learning';
+import { RoadmapTopic, LearningRoadmap } from '../types/learning';
 
 export class RoadmapService {
   private openai: OpenAI;

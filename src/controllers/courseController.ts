@@ -1,11 +1,10 @@
-import { Request, Response, RequestHandler } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import Course from '../models/Course';
 import { AuthRequest } from '../types/auth';
 import { Course as CourseType, transformCourseData } from '../types/course';
 
 export const courseController = {
-  // Get all courses
-  getCourses: (async (req: Request, res: Response) => {
+  getCourses: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const courses = await Course.find()
         .sort({ createdAt: -1 })
@@ -27,117 +26,71 @@ export const courseController = {
 
       res.json({ success: true, courses: transformedCourses });
     } catch (error) {
-      console.error('Error getting courses:', error);
-      res.status(500).json({ success: false, message: 'Error fetching courses' });
+      next(error);
     }
-  }) as RequestHandler,
+  },
 
-  // Get course by ID
-  getCourseById: (async (req: Request, res: Response) => {
+  getCourseById: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const course = await Course.findById(req.params.id);
       
       if (!course) {
-        return res.status(404).json({ success: false, message: 'Course not found' });
+        res.status(404).json({ success: false, message: 'Course not found' });
+        return;
       }
 
       const transformedCourse = transformCourseData(course.toObject() as CourseType);
       res.json({ success: true, course: transformedCourse });
     } catch (error) {
-      console.error('Error getting course:', error);
-      res.status(500).json({ success: false, message: 'Error fetching course' });
+      next(error);
     }
-  }) as RequestHandler,
+  },
 
-  // Create new course
-  createCourse: (async (req: Request, res: Response) => {
+  createCourse: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { Title, URL, "Short Intro": ShortIntro, Category, "Sub-Category": SubCategory,
-        "Course Type": CourseType, Language, "Subtitle Languages": SubtitleLanguages,
-        Skills, Instructors, Rating, "Number of viewers": NumberOfViewers,
-        Duration, Site } = req.body;
-
-      const course = new Course({
-        Title,
-        URL,
-        "Short Intro": ShortIntro,
-        Category,
-        "Sub-Category": SubCategory,
-        "Course Type": CourseType,
-        Language,
-        "Subtitle Languages": SubtitleLanguages,
-        Skills,
-        Instructors,
-        Rating,
-        "Number of viewers": NumberOfViewers,
-        Duration,
-        Site
-      });
-
+      const courseData = req.body;
+      const course = new Course(courseData);
       await course.save();
+      
       const transformedCourse = transformCourseData(course.toObject() as CourseType);
       res.status(201).json({ success: true, course: transformedCourse });
     } catch (error) {
-      console.error('Error creating course:', error);
-      res.status(500).json({ success: false, message: 'Error creating course' });
+      next(error);
     }
-  }) as RequestHandler,
+  },
 
-  // Update course
-  updateCourse: (async (req: Request, res: Response) => {
+  updateCourse: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { Title, URL, "Short Intro": ShortIntro, Category, "Sub-Category": SubCategory,
-        "Course Type": CourseType, Language, "Subtitle Languages": SubtitleLanguages,
-        Skills, Instructors, Rating, "Number of viewers": NumberOfViewers,
-        Duration, Site } = req.body;
-
       const course = await Course.findById(req.params.id);
 
       if (!course) {
-        return res.status(404).json({ success: false, message: 'Course not found' });
+        res.status(404).json({ success: false, message: 'Course not found' });
+        return;
       }
 
-      // Update fields if provided
-      if (Title) course.Title = Title;
-      if (URL) course.URL = URL;
-      if (ShortIntro) course["Short Intro"] = ShortIntro;
-      if (Category) course.Category = Category;
-      if (SubCategory) course["Sub-Category"] = SubCategory;
-      if (CourseType) course["Course Type"] = CourseType;
-      if (Language) course.Language = Language;
-      if (SubtitleLanguages) course["Subtitle Languages"] = SubtitleLanguages;
-      if (Skills) course.Skills = Skills;
-      if (Instructors) course.Instructors = Instructors;
-      if (Rating) course.Rating = Rating;
-      if (NumberOfViewers) course["Number of viewers"] = NumberOfViewers;
-      if (Duration) course.Duration = Duration;
-      if (Site) course.Site = Site;
-
+      Object.assign(course, req.body);
       await course.save();
+      
       const transformedCourse = transformCourseData(course.toObject() as CourseType);
       res.json({ success: true, course: transformedCourse });
     } catch (error) {
-      console.error('Error updating course:', error);
-      res.status(500).json({ success: false, message: 'Error updating course' });
+      next(error);
     }
-  }) as RequestHandler,
+  },
 
-  // Delete course
-  deleteCourse: (async (req: Request, res: Response) => {
+  deleteCourse: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const course = await Course.findById(req.params.id);
 
       if (!course) {
-        return res.status(404).json({ success: false, message: 'Course not found' });
+        res.status(404).json({ success: false, message: 'Course not found' });
+        return;
       }
 
       await course.deleteOne();
       res.json({ success: true, message: 'Course deleted successfully' });
     } catch (error) {
-      console.error('Error deleting course:', error);
-      res.status(500).json({ success: false, message: 'Error deleting course' });
+      next(error);
     }
-  }) as RequestHandler,
+  }
 };
-
-export default courseController; 

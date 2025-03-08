@@ -1,28 +1,20 @@
-import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
+import { Router } from 'express';
 import { courseController } from '../controllers/courseController';
 import { authenticateToken } from '../middleware/auth';
+import { asyncMiddleware, authMiddleware } from '../middleware/routeMiddleware';
 
 const router = Router();
 
-// Helper to wrap async handlers
-const wrapAsync = (handler: RequestHandler): RequestHandler => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      await handler(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
-};
-
 // Public routes
-router.get('/', wrapAsync(courseController.getCourses));
-router.get('/:id', wrapAsync(courseController.getCourseById));
+router.get('/', asyncMiddleware(courseController.getCourses));
+router.get('/:id', asyncMiddleware(courseController.getCourseById));
 
-// Protected routes
-router.use(authenticateToken as RequestHandler);
-router.post('/', wrapAsync(courseController.createCourse));
-router.put('/:id', wrapAsync(courseController.updateCourse));
-router.delete('/:id', wrapAsync(courseController.deleteCourse));
+// Protected routes - apply authentication middleware to all routes below
+router.use(authenticateToken);
 
-export default router; 
+// Protected routes with auth middleware
+router.post('/', authMiddleware(courseController.createCourse));
+router.put('/:id', authMiddleware(courseController.updateCourse));
+router.delete('/:id', authMiddleware(courseController.deleteCourse));
+
+export default router;

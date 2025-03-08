@@ -23,6 +23,13 @@ import {
   MessageCircle,
   Loader
 } from 'lucide-react';
+import { RoadmapService } from '../services/roadmapService';
+import { LearningRoadmap, RoadmapTopic } from '../types/learning';
+import { getDb } from '../lib/mongodb';
+import { ObjectId } from 'mongodb';
+import Course from '../models/Course';
+import { connectDB } from '../lib/mongoose';
+import mongoose from 'mongoose';
 
 interface Resource {
   title: string;
@@ -79,8 +86,9 @@ interface LearningRoadmap {
 }
 
 const CoursePage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const { courseId } = useParams();
+  const [course, setCourse] = useState<any>(null);
+  const [roadmap, setRoadmap] = useState<LearningRoadmap | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
@@ -88,57 +96,56 @@ const CoursePage: React.FC = () => {
   const [expandedModules, setExpandedModules] = useState<number[]>([0]);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
-  const [learningRoadmap, setLearningRoadmap] = useState<LearningRoadmap | null>(null);
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        console.log('Fetching course with ID:', id);
-        if (!id) {
-          throw new Error('No course ID provided');
-        }
-        const courseData = await courseApi.getCourseById(id);
-        setCourse(courseData);
-        
-        // Create learning roadmap from YouTube playlist
-        if (courseData.title) {
-          await loadLearningRoadmap(courseData.title);
-        }
-      } catch (err: any) {
-        console.error('Detailed error:', err);
-        const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch course details';
-        setError(`Error: ${errorMessage}`);
-      } finally {
-        setLoading(false);
+  // Remove this line as we'll use the instance inside the functions
+  // const roadmapService = new RoadmapService();
+
+  const fetchCourse = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await connectDB();
+      const courseData = await Course.findById(courseId);
+  
+      if (!courseData) {
+        throw new Error('Course not found');
       }
-    };
-
-    if (id) {
-      fetchCourse();
-    } else {
-      setError('No course ID provided');
+  
+      setCourse(courseData);
+      await loadLearningRoadmap(courseData);
+    } catch (error) {
+      console.error('Error fetching course:', error);
+      setError('Failed to load course');
+    } finally {
       setLoading(false);
     }
-  }, [id]);
+  };
 
-  const loadLearningRoadmap = async (searchQuery: string) => {
-    setLoadingVideo(true);
+  const loadLearningRoadmap = async (courseData: any) => {
     try {
-      const roadmap = await youtubeService.createLearningRoadmap(searchQuery);
-      if (roadmap && roadmap.videos && roadmap.videos.length > 0) {
-        setLearningRoadmap(roadmap);
-        setCurrentVideoId(roadmap.videos[0].videoId);
-      } else {
-        console.log('No learning roadmap available for:', searchQuery);
-        setError('No video content available for this course. Please try again later.');
+      const roadmapService = new RoadmapService();
+      const userId = localStorage.getItem('userId') || ''; // Get actual user ID from your auth context
+      const roadmapData = await roadmapService.getRoadmapForCourse(courseData._id, userId);
+      
+      if (!roadmapData) {
+        throw new Error('No roadmap data received');
       }
+      
+      setRoadmap(roadmapData);
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading learning roadmap:', error);
-      setError('Failed to load video content. Please check your internet connection and try again.');
-    } finally {
-      setLoadingVideo(false);
+      console.error('Error loading roadmap:', error);
+      setError('Failed to load learning roadmap');
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (courseId) {
+      fetchCourse();
+    }
+  }, [courseId]);
 
   const toggleModule = (index: number) => {
     setExpandedModules(prev => 
@@ -152,8 +159,8 @@ const CoursePage: React.FC = () => {
     setActiveModuleIndex(moduleIndex);
     setActiveLessonIndex(lessonIndex);
     
-    if (learningRoadmap?.videos[lessonIndex]) {
-      setCurrentVideoId(learningRoadmap.videos[lessonIndex].videoId);
+    if (roadmap?.videos[lessonIndex]) {
+      setCurrentVideoId(roadmap.videos[lessonIndex].videoId);
     }
   };
 
@@ -287,16 +294,16 @@ const CoursePage: React.FC = () => {
                 </div>
               )}
               
-              {learningRoadmap && currentVideoId && (
+              {roadmap && currentVideoId && (
                 <div className="mt-4">
                   <h2 className="text-xl font-semibold">
-                    {learningRoadmap.videos.find(v => v.videoId === currentVideoId)?.title}
+                    {roadmap.videos.find(v => v.videoId === currentVideoId)?.title}
                   </h2>
                   <p className="text-sm text-gray-600 mt-2">
-                    From playlist: {learningRoadmap.playlistTitle}
+                    From playlist: {roadmap.playlistTitle}
                   </p>
                   <p className="text-sm text-gray-500">
-                    By {learningRoadmap.channelTitle}
+                    By {roadmap.channelTitle}
                   </p>
                 </div>
               )}
@@ -307,9 +314,9 @@ const CoursePage: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-semibold mb-4">Course Content</h2>
-              {learningRoadmap ? (
+              {roadmap ? (
                 <div className="space-y-4">
-                  {learningRoadmap.videos.map((video, index) => (
+                  {roadmap.videos.map((video, index) => (
                     <button
                       key={video.videoId}
                       onClick={() => {

@@ -2,6 +2,7 @@ import express, { Router, Request, Response, NextFunction, RequestHandler } from
 import { authController } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 import { AuthRequest } from '../types/auth';
+import { wrapHandler, wrapAuthHandler } from '../utils/routeHandler';
 
 const router: Router = express.Router();
 
@@ -24,4 +25,4 @@ router.get('/me', asyncHandler((req: Request, res: Response) => authController.g
 router.put('/profile', asyncHandler((req: Request, res: Response) => authController.updateProfile(req as AuthRequest, res)));
 router.put('/change-password', asyncHandler((req: Request, res: Response) => authController.changePassword(req as AuthRequest, res)));
 
-export default router; 
+export default router;

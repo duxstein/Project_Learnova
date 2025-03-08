@@ -170,13 +170,29 @@ async function generateRecommendations(preferences: UserPreferences) {
     `;
 
     // Get AI recommendations
-    const completion = await openai.chat.completions.create({
-      messages: [{ role: "system", content: prompt }],
-      model: "gpt-4",
-      response_format: { type: "json_object" },
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI learning advisor that provides personalized course recommendations."
+        },
+        {
+          role: "user",
+          content: `Based on the following user preferences and learning history, suggest relevant courses and a learning path:
+            Learning Style: ${preferences.learningStyle}
+            Learning Pace: ${preferences.learningPace}
+            Learning Approach: ${preferences.learningApproach}
+            Preferred Time: ${preferences.preferredTime}
+            Session Duration: ${preferences.sessionDuration}
+            Learning Environment: ${preferences.learningEnvironment}
+            Learning Strength: ${preferences.learningStrength}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
     });
-
-    const content = completion.choices[0]?.message?.content;
+    const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error('No response from OpenAI');
     }
@@ -209,4 +225,4 @@ async function generateRecommendations(preferences: UserPreferences) {
     console.error('Error generating AI recommendations:', error);
     throw error;
   }
-} 
+}

@@ -7,27 +7,17 @@ import {
   addPoints,
   unlockBadge
 } from '../controllers/gamificationController';
+import { wrapAuthHandler } from '../utils/routeHandler';
 
 const router = express.Router();
 
-// Helper to wrap async handlers
-const wrapHandler = (handler: RequestHandler): RequestHandler => {
-  return async (req, res, next) => {
-    try {
-      await handler(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
-};
-
 // Protected routes - require authentication
-router.get('/user-data', authenticateToken as RequestHandler, wrapHandler(getUserData as RequestHandler));
-router.post('/update-streak', authenticateToken as RequestHandler, wrapHandler(updateStreak as RequestHandler));
-router.post('/add-points', authenticateToken as RequestHandler, wrapHandler(addPoints as RequestHandler));
-router.post('/unlock-badge', authenticateToken as RequestHandler, wrapHandler(unlockBadge as RequestHandler));
+router.get('/user-data', authenticateToken, wrapAuthHandler(getUserData));
+router.post('/update-streak', authenticateToken, wrapAuthHandler(updateStreak));
+router.post('/add-points', authenticateToken, wrapAuthHandler(addPoints));
+router.post('/unlock-badge', authenticateToken, wrapAuthHandler(unlockBadge));
 
-// Public routes - no authentication required
-router.get('/leaderboard', wrapHandler(getLeaderboard as RequestHandler));
+// Public routes
+router.get('/leaderboard', wrapAuthHandler(getLeaderboard));
 
-export default router; 
+export default router;

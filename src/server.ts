@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
 import userPreferencesRoutes from './routes/userPreferencesRoutes';
+import roadmapRoutes from './routes/roadmapRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +19,7 @@ connectDB();
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend URL
+  origin: 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -32,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/user-preferences', userPreferencesRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -39,8 +41,18 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ message: 'Something broke!' });
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-}); 
+const startServer = (port: number) => {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  }).on('error', (e: any) => {
+    if (e.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is busy, trying ${port + 1}`);
+      startServer(port + 1);
+    } else {
+      console.error(e);
+    }
+  });
+};
+
+const initialPort = Number(process.env.PORT) || 3001;
+startServer(initialPort);
